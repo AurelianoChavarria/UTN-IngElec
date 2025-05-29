@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulación de Interpretación</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for animations and specific elements */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom right, #e0f2fe, #bfdbfe); /* Soft blue gradient background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px; /* Further reduced padding */
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 680px; /* Further reduced max-width for overall smaller size */
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* rounded-3xl */
+            box-shadow: 0 18px 36px -9px rgba(0, 0, 0, 0.18), 0 7px 10px -2px rgba(0, 0, 0, 0.08); /* Slightly adjusted shadow */
+            padding: 1.8rem; /* Further reduced padding */
+            text-align: center;
+            border: 1px solid #e2e8f0; /* Subtle border */
+        }
+
+        .stage {
+            border: 2px solid #cbd5e1; /* border-gray-300 */
+            border-radius: 0.8rem; /* Slightly less rounded */
+            padding: 0.8rem; /* Further reduced padding */
+            margin-bottom: 0.8rem; /* Further reduced margin */
+            background-color: #f8fafc; /* bg-gray-50 */
+            min-height: 95px; /* Further reduced min-height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease-in-out; /* Smooth transitions */
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.03); /* Subtle initial shadow */
+        }
+
+        .stage-active {
+            border-color: #3b82f6; /* border-blue-500 */
+            background-color: #e0f2fe; /* bg-blue-100 */
+            box-shadow: 0 7px 10px -2px rgba(59, 130, 246, 0.2), 0 2px 4px -1px rgba(59, 130, 246, 0.08); /* Blue shadow for active */
+            transform: translateY(-3px); /* Slightly less lift */
+        }
+
+        .code-box {
+            background-color: #2d3748; /* Darker slate-700 */
+            color: #f7fafc; /* text-gray-100 */
+            padding: 0.7rem; /* Further reduced padding */
+            border-radius: 0.5rem; /* Slightly less rounded */
+            font-family: 'Fira Code', 'Cascadia Code', monospace; /* Monospace font for code */
+            white-space: pre-wrap;
+            text-align: left;
+            width: 100%;
+            max-width: 250px; /* Further reduced max-width */
+            margin-top: 0.5rem; /* Further reduced margin */
+            font-size: 0.8rem; /* Slightly smaller font size for code */
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); /* Deeper inset shadow */
+            border: 1px solid #4a5568; /* Subtle border */
+        }
+
+        .explanation {
+            margin-top: 1rem; /* Further reduced margin */
+            font-size: 1rem; /* Slightly smaller font size */
+            color: #334155; /* text-slate-700 */
+            min-height: 50px; /* Reserve space */
+            font-weight: 500; /* Medium weight */
+        }
+
+        .arrow {
+            font-size: 2rem; /* Further reduced arrows size */
+            color: #94a3b8; /* text-slate-400 */
+            margin: 0.5rem 0; /* Further reduced margin */
+            transition: all 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Bounce effect */
+            transform: translateY(0);
+        }
+
+        .arrow-animated {
+            color: #2563eb; /* text-blue-600 */
+            transform: translateY(10px) scale(1.05); /* Slightly less pronounced movement and scale */
+            text-shadow: 0 0 6px rgba(37, 99, 235, 0.3); /* Glow effect */
+        }
+
+        .button-primary {
+            background: linear-gradient(to right, #3b82f6, #2563eb); /* Blue gradient */
+            color: white;
+            padding: 0.6rem 1.4rem; /* Further reduced padding */
+            border-radius: 0.6rem; /* Slightly less rounded */
+            font-weight: 700; /* font-bold */
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15); /* Slightly less deep shadow */
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+            letter-spacing: 0.015em; /* Slight letter spacing */
+            font-size: 0.9rem; /* Slightly smaller font size */
+        }
+
+        .button-primary:hover {
+            background: linear-gradient(to right, #2563eb, #1d4ed8); /* Darker blue gradient */
+            transform: translateY(-1px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-primary:active {
+            background: linear-gradient(to right, #1d4ed8, #1e40af);
+            transform: translateY(0.5px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .button-secondary {
+            background-color: #e2e8f0; /* bg-gray-200 */
+            color: #475569; /* text-slate-600 */
+            padding: 0.6rem 1.4rem; /* Further reduced padding */
+            border-radius: 0.6rem; /* Slightly less rounded */
+            font-weight: 700; /* font-bold */
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06); /* Slightly less deep shadow */
+            margin-left: 0.7rem; /* Further reduced margin */
+            letter-spacing: 0.015em;
+            font-size: 0.9rem; /* Slightly smaller font size */
+        }
+
+        .button-secondary:hover {
+            background-color: #cbd5e1; /* bg-gray-300 */
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .button-secondary:active {
+            background-color: #94a3b8; /* bg-gray-400 */
+            transform: translateY(0.5px);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            gap: 0.75rem;
+        }
+
+        .control-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .control-group input[type="number"] {
+            padding: 0.4rem 0.6rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            width: 80px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #334155;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .control-group input[type="number"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.8rem; /* Even further reduced padding on small screens */
+            }
+            .stage {
+                min-height: 80px; /* Even further reduced min-height */
+                padding: 0.7rem; /* Even further reduced padding */
+            }
+            .explanation {
+                font-size: 0.9rem; /* Smaller font size on small screens */
+                min-height: 55px; /* Adjust for potentially longer text wrapping */
+            }
+            .button-primary, .button-secondary {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+            .button-container {
+                flex-direction: column;
+                gap: 0.7rem; /* Reduced gap for vertical buttons */
+            }
+            .button-secondary {
+                margin-left: 0;
+            }
+            .code-box {
+                max-width: 100%; /* Allow full width on small screens */
+                font-size: 0.75rem; /* Even smaller font for code on mobile */
+            }
+            .control-group {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 mb-4 leading-tight">
+            ✨ ¿Cómo funciona un Programa Interpretado? ✨
+        </h1>
+        <p class="text-sm md:text-base text-slate-700 mb-6 leading-relaxed">
+            Imagina que tienes una receta de cocina (tu código Python) y un chef que la lee y la ejecuta paso a paso, ¡en el momento! No hay necesidad de una traducción completa antes de empezar.
+            Esta simulación te mostrará cómo un "intérprete" ejecuta tu código directamente.
+        </p>
+
+        <div class="control-group">
+            <label for="delayInput">Retraso de Transición (ms):</label>
+            <input type="number" id="delayInput" value="1800" min="500" max="5000" step="100">
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div id="stage-source" class="stage">
+                <h2 class="text-base font-semibold text-gray-800 mb-1">1. Código Fuente Python 🐍</h2>
+                <div class="code-box">
+                    <pre>
+def saludar():
+    print("¡Hola, mundo!")
+
+saludar()</pre>
+                </div>
+            </div>
+
+            <div id="stage-interpreter" class="stage">
+                <h2 class="text-base font-semibold text-gray-800 mb-1">2. Intérprete 🧑‍🍳</h2>
+                <p class="text-xs text-gray-600">
+                    (El lector y ejecutor)
+                </p>
+            </div>
+
+            <div class="col-span-1 md:col-span-2 flex justify-center items-center">
+                <div id="arrow-interpreter" class="arrow">⬇️</div>
+            </div>
+
+            <div id="stage-execution" class="stage">
+                <h2 class="text-base font-semibold text-gray-800 mb-1">3. Ejecución 🚀</h2>
+                <p class="text-xl font-bold text-green-600">
+                    ¡Hola, mundo!
+                </p>
+            </div>
+        </div>
+
+        <div id="explanation-text" class="explanation text-sm text-slate-600 mb-6">
+            Haz clic en "Iniciar Simulación" para ver el proceso paso a paso.
+        </div>
+
+        <div class="button-container flex justify-center items-center gap-2 md:gap-4">
+            <button id="startButton" class="button-primary">
+                Iniciar Simulación
+            </button>
+            <button id="resetButton" class="button-secondary" disabled>
+                Reiniciar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Get references to DOM elements
+        const startButton = document.getElementById('startButton');
+        const resetButton = document.getElementById('resetButton');
+        const explanationText = document.getElementById('explanation-text');
+        const delayInput = document.getElementById('delayInput'); // Get the new input element
+
+        const stages = {
+            source: { element: document.getElementById('stage-source'), explanation: "Este es tu código Python, escrito en un lenguaje que los humanos podemos entender." },
+            interpreter: { element: document.getElementById('stage-interpreter'), explanation: "El intérprete es como un chef que lee tu receta (código) línea por línea y ejecuta cada instrucción al instante. Es importante que cada computadora donde quieras ejecutar este código tenga su propio intérprete instalado." },
+            execution: { element: document.getElementById('stage-execution'), explanation: "A medida que el intérprete lee cada línea, el programa cobra vida y realiza las acciones que le pediste. ¡El plato se prepara directamente!" }
+        };
+
+        const arrows = {
+            interpreter: document.getElementById('arrow-interpreter')
+        };
+
+        let currentStep = 0;
+        const stepOrder = ['source', 'interpreter', 'execution']; // Simplified step order for interpretation
+        let currentDelay = parseInt(delayInput.value); // Initialize with default value
+
+        /**
+         * Resets the simulation to its initial state.
+         */
+        function resetSimulation() {
+            currentStep = 0;
+            explanationText.textContent = "Haz clic en 'Iniciar Simulación' para ver el proceso paso a paso.";
+            startButton.disabled = false;
+            resetButton.disabled = true;
+            delayInput.disabled = false; // Enable delay input on reset
+
+            // Remove active classes from all stages and arrows
+            for (const key in stages) {
+                stages[key].element.classList.remove('stage-active');
+            }
+            for (const key in arrows) {
+                arrows[key].classList.remove('arrow-animated');
+            }
+
+            // Reset specific stage content if needed (e.g., execution output)
+            stages.execution.element.querySelector('p').style.opacity = '0';
+            // No object code box in this simulation, so no need to reset its opacity
+        }
+
+        /**
+         * Advances the simulation to the next step.
+         */
+        function nextStep() {
+            // Update current delay from input just before each step, in case it was changed mid-simulation
+            currentDelay = parseInt(delayInput.value);
+            if (isNaN(currentDelay) || currentDelay < 500) { // Basic validation
+                currentDelay = 500; // Minimum delay
+                delayInput.value = 500;
+            } else if (currentDelay > 5000) {
+                currentDelay = 5000; // Maximum delay
+                delayInput.value = 5000;
+            }
+
+            if (currentStep < stepOrder.length) {
+                const stepKey = stepOrder[currentStep];
+                const stage = stages[stepKey];
+
+                // Update explanation text
+                explanationText.textContent = stage.explanation;
+
+                // Highlight the current stage
+                stage.element.classList.add('stage-active');
+
+                // Specific animations/updates for each stage
+                if (stepKey === 'interpreter') {
+                    // De-highlight source after a short delay to show transition
+                    setTimeout(() => stages.source.element.classList.remove('stage-active'), currentDelay / 2);
+                    arrows.interpreter.classList.add('arrow-animated');
+                } else if (stepKey === 'execution') {
+                    // De-highlight interpreter after a short delay
+                    setTimeout(() => stages.interpreter.element.classList.remove('stage-active'), currentDelay / 2);
+                    arrows.interpreter.classList.remove('arrow-animated'); // Remove arrow animation once execution starts
+                    stages.execution.element.querySelector('p').style.opacity = '1';
+                }
+
+                currentStep++;
+
+                // If not the last step, schedule the next one
+                if (currentStep < stepOrder.length) {
+                    setTimeout(nextStep, currentDelay);
+                } else {
+                    // Simulation finished
+                    startButton.disabled = true;
+                    resetButton.disabled = false;
+                    delayInput.disabled = false; // Enable delay input when simulation finishes
+                }
+            }
+        }
+
+        /**
+         * Starts the simulation.
+         */
+        function startSimulation() {
+            startButton.disabled = true;
+            resetButton.disabled = true;
+            delayInput.disabled = true; // Disable delay input during simulation
+            resetSimulation(); // Ensure a clean start
+            // Set initial state for the first step
+            stages.execution.element.querySelector('p').style.opacity = '0'; // Hide "Hola, mundo!" initially
+            setTimeout(nextStep, 500); // Small delay before first step starts
+        }
+
+        // Event Listeners
+        startButton.addEventListener('click', startSimulation);
+        resetButton.addEventListener('click', resetSimulation);
+
+        // Initial reset to set up the UI correctly on load
+        resetSimulation();
+    </script>
+</body>
+</html>
